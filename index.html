@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sensor Panel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#e9edf1; --panel:#f8fafb; --ink:#15202b; --mute:#5c6b78; --line:#cfd7de;
+  --acc:#2457d6; --ok:#13804a; --warn:#a75f00; --err:#b42318; --well:#dfe5ea;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0f151b; --panel:#17202a; --ink:#e4eaf0; --mute:#8d9cab; --line:#2a3744;
+    --acc:#7aa2ff; --ok:#4cc48a; --warn:#f0b04a; --err:#ff7b6e; --well:#1e2935;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0f151b; --panel:#17202a; --ink:#e4eaf0; --mute:#8d9cab; --line:#2a3744;
+  --acc:#7aa2ff; --ok:#4cc48a; --warn:#f0b04a; --err:#ff7b6e; --well:#1e2935;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font:15px/1.45 "IBM Plex Sans",-apple-system,system-ui,"Segoe UI",sans-serif}
+.wrap{max-width:1100px;margin:0 auto;padding:20px 16px 40px}
+header{display:flex;flex-wrap:wrap;gap:12px 20px;align-items:end;justify-content:space-between;margin-bottom:18px}
+h1{font-size:26px;font-weight:600;margin:0;letter-spacing:-.01em}
+.sub{color:var(--mute);margin:2px 0 0;font-size:14px}
+.controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+button,select{font:inherit;font-size:14px;border-radius:8px;border:1px solid var(--line);
+  background:var(--panel);color:var(--ink);padding:9px 14px;min-height:40px}
+button.primary{background:var(--acc);border-color:var(--acc);color:#fff;font-weight:500}
+button:disabled{opacity:.5}
+button:focus-visible,select:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+label.ref{font-size:14px;color:var(--mute);display:flex;gap:6px;align-items:center}
+.stamp{font:12px "IBM Plex Mono",ui-monospace,monospace;color:var(--mute)}
+.grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(260px,1fr))}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 14px 12px}
+.card.wide{grid-column:1/-1}
+.card h2{font-size:15px;font-weight:600;margin:0 0 10px;display:flex;justify-content:space-between;gap:8px;align-items:center}
+.badge{font-size:12px;font-weight:500;padding:2px 8px;border-radius:999px;background:var(--well);color:var(--mute);white-space:nowrap}
+.badge.ok{color:var(--ok)} .badge.warn{color:var(--warn)} .badge.err{color:var(--err)}
+dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:4px 12px}
+dt{color:var(--mute);font-size:14px}
+dd{margin:0;text-align:right;font:500 15px "IBM Plex Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums}
+.u{color:var(--mute);font-weight:400;font-size:12px;margin-left:3px}
+.note{color:var(--mute);font-size:13px;margin:8px 0 0}
+.hero{display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:center}
+.level{width:140px;height:140px;border-radius:50%;background:var(--well);border:1px solid var(--line);position:relative;overflow:hidden}
+.level::before,.level::after{content:"";position:absolute;background:var(--line)}
+.level::before{left:50%;top:0;bottom:0;width:1px}
+.level::after{top:50%;left:0;right:0;height:1px}
+.ring{position:absolute;inset:35%;border:1px solid var(--line);border-radius:50%}
+.bubble{position:absolute;width:22px;height:22px;border-radius:50%;background:var(--acc);
+  left:calc(50% - 11px);top:calc(50% - 11px);box-shadow:0 0 0 3px color-mix(in srgb,var(--acc) 25%,transparent)}
+.meter{height:8px;background:var(--well);border-radius:4px;overflow:hidden;margin-top:8px}
+.meter>i{display:block;height:100%;width:0;background:var(--acc)}
+video{width:100%;max-height:120px;object-fit:cover;border-radius:6px;margin-top:8px;background:var(--well);display:none}
+.cols{display:grid;gap:4px 24px;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));margin:0;padding:0;list-style:none}
+.cols li{font-size:14px;padding:3px 0;border-bottom:1px solid var(--line)}
+.cols b{font-weight:500}
+h3{font-size:14px;font-weight:600;margin:14px 0 6px}
+@media (max-width:520px){.hero{grid-template-columns:1fr;justify-items:center}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Sensor panel</h1>
+      <p class="sub">What this browser can read from your device.</p>
+    </div>
+    <div class="controls">
+      <button id="btnMotion" class="primary">Start motion sensors</button>
+      <button id="btnAV">Start mic &amp; camera</button>
+      <label class="ref">Refresh
+        <select id="rate">
+          <option value="live">Live</option>
+          <option value="1000" selected>1 s</option>
+          <option value="5000">5 s</option>
+        </select>
+      </label>
+      <span class="stamp" id="stamp">—</span>
+    </div>
+  </header>
+
+  <div class="grid">
+    <section class="card wide">
+      <h2>Tilt <span class="badge" id="st-orient">Not started</span></h2>
+      <div class="hero">
+        <div class="level" aria-hidden="true"><div class="ring"></div><div class="bubble" id="bubble"></div></div>
+        <dl>
+          <dt>Alpha (yaw, about z)</dt><dd><span id="o-a">—</span><span class="u">°</span></dd>
+          <dt>Beta (pitch, about x)</dt><dd><span id="o-b">—</span><span class="u">°</span></dd>
+          <dt>Gamma (roll, about y)</dt><dd><span id="o-g">—</span><span class="u">°</span></dd>
+          <dt>Absolute frame</dt><dd id="o-abs">—</dd>
+          <dt>Compass heading</dt><dd><span id="o-h">—</span><span class="u">°</span></dd>
+          <dt>Compass accuracy</dt><dd><span id="o-hacc">—</span><span class="u">±°</span></dd>
+        </dl>
+      </div>
+      <p class="note">Compass heading comes from the magnetometer via iPadOS's WebKit extension; raw magnetic field values aren't exposed.</p>
+    </section>
+
+    <section class="card">
+      <h2>Location <span class="badge" id="st-geo">Not started</span></h2>
+      <dl>
+        <dt>Latitude</dt><dd><span id="g-lat">—</span><span class="u">°</span></dd>
+        <dt>Longitude</dt><dd><span id="g-lon">—</span><span class="u">°</span></dd>
+        <dt>Accuracy</dt><dd><span id="g-acc">—</span><span class="u">m</span></dd>
+        <dt>Fix age</dt><dd><span id="g-age">—</span><span class="u">s</span></dd>
+      </dl>
+    </section>
+
+    <section class="card">
+      <h2>Linear acceleration <span class="badge" id="st-motion">Not started</span></h2>
+      <dl>
+        <dt>x</dt><dd><span id="a-x">—</span><span class="u">m/s²</span></dd>
+        <dt>y</dt><dd><span id="a-y">—</span><span class="u">m/s²</span></dd>
+        <dt>z</dt><dd><span id="a-z">—</span><span class="u">m/s²</span></dd>
+        <dt>Event rate</dt><dd><span id="m-hz">—</span><span class="u">Hz</span></dd>
+      </dl>
+      <p class="note">Gravity removed by the OS sensor fusion.</p>
+    </section>
+
+    <section class="card">
+      <h2>Acceleration incl. gravity</h2>
+      <dl>
+        <dt>x</dt><dd><span id="ag-x">—</span><span class="u">m/s²</span></dd>
+        <dt>y</dt><dd><span id="ag-y">—</span><span class="u">m/s²</span></dd>
+        <dt>z</dt><dd><span id="ag-z">—</span><span class="u">m/s²</span></dd>
+        <dt>|a|</dt><dd><span id="ag-m">—</span><span class="u">m/s²</span></dd>
+      </dl>
+    </section>
+
+    <section class="card">
+      <h2>Rotation rate (gyro)</h2>
+      <dl>
+        <dt>Alpha (z)</dt><dd><span id="r-a">—</span><span class="u">°/s</span></dd>
+        <dt>Beta (x)</dt><dd><span id="r-b">—</span><span class="u">°/s</span></dd>
+        <dt>Gamma (y)</dt><dd><span id="r-g">—</span><span class="u">°/s</span></dd>
+      </dl>
+    </section>
+
+    <section class="card">
+      <h2>Screen</h2>
+      <dl>
+        <dt>Orientation</dt><dd id="s-type">—</dd>
+        <dt>Angle</dt><dd><span id="s-ang">—</span><span class="u">°</span></dd>
+        <dt>Viewport</dt><dd id="s-vp">—</dd>
+        <dt>Pixel ratio</dt><dd id="s-dpr">—</dd>
+      </dl>
+    </section>
+
+    <section class="card">
+      <h2>Microphone <span class="badge" id="st-mic">Not started</span></h2>
+      <dl>
+        <dt>Level (RMS)</dt><dd><span id="mic-rms">—</span><span class="u">dBFS</span></dd>
+        <dt>Peak since refresh</dt><dd><span id="mic-pk">—</span><span class="u">dBFS</span></dd>
+        <dt>Sample rate</dt><dd><span id="mic-sr">—</span><span class="u">Hz</span></dd>
+      </dl>
+      <div class="meter"><i id="mic-bar"></i></div>
+    </section>
+
+    <section class="card">
+      <h2>Camera light level <span class="badge" id="st-cam">Not started</span></h2>
+      <dl>
+        <dt>Mean luminance</dt><dd><span id="cam-l">—</span><span class="u">/255</span></dd>
+        <dt>Frame size</dt><dd id="cam-sz">—</dd>
+      </dl>
+      <div class="meter"><i id="cam-bar"></i></div>
+      <video id="vid" playsinline muted></video>
+      <p class="note">Front camera used as a rough ambient light sensor; auto-exposure compresses the range.</p>
+    </section>
+
+    <section class="card wide">
+      <h2>What location could have reported</h2>
+      <h3>Available through the browser, not shown above</h3>
+      <ul class="cols">
+        <li><b>Altitude</b>, meters above the WGS84 ellipsoid (often null without GPS)</li>
+        <li><b>Altitude accuracy</b>, meters</li>
+        <li><b>Heading</b>, degrees from true north, only while moving</li>
+        <li><b>Speed</b>, m/s, only while moving</li>
+        <li><b>Timestamp</b> of the fix</li>
+      </ul>
+      <h3>In a raw GNSS/NMEA stream, never exposed to web pages</h3>
+      <ul class="cols">
+        <li><b>Satellites</b> in view and in use, per-satellite PRN, elevation, azimuth</li>
+        <li><b>Signal strength</b> (SNR / C/N₀) per satellite</li>
+        <li><b>Dilution of precision</b>: HDOP, VDOP, PDOP</li>
+        <li><b>Fix type and quality</b>: none / 2D / 3D, DGPS, RTK</li>
+        <li><b>Constellation</b>: GPS, GLONASS, Galileo, BeiDou, QZSS</li>
+        <li><b>GNSS UTC time</b>, geoid separation, magnetic variation</li>
+      </ul>
+      <p class="note">Wi-Fi-only iPads have no GNSS receiver; their position comes from Wi-Fi and network lookup, so accuracy is typically tens of meters.</p>
+    </section>
+
+    <section class="card wide">
+      <h2>Not available in iPadOS Safari</h2>
+      <ul class="cols">
+        <li><b>Raw magnetometer</b> (µT per axis), only the derived compass heading</li>
+        <li><b>Barometer / altimeter</b> pressure</li>
+        <li><b>Ambient light sensor</b> (camera proxy used above)</li>
+        <li><b>Proximity sensor</b></li>
+        <li><b>Battery level and charging state</b></li>
+        <li><b>Generic Sensor API</b> classes (Accelerometer, Gyroscope, etc.) at custom sample rates</li>
+        <li><b>Pedometer / activity</b> data</li>
+        <li><b>LiDAR / Face ID depth</b></li>
+      </ul>
+    </section>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const fmt = (v, d = 2) => (v == null || Number.isNaN(Number(v))) ? '—' : Number(v).toFixed(d);
+const setBadge = (k, cls, txt) => { const e = $('st-' + k); e.className = 'badge ' + cls; e.textContent = txt; };
+
+const S = { geo: null, motion: null, orient: null, motionN: 0, hz: null,
+            mic: { rms: null, peak: -Infinity, sr: null }, cam: { lum: null, w: 0, h: 0 } };
+
+/* ---------- Location: starts automatically ---------- */
+function startGeo() {
+  if (!('geolocation' in navigator)) { setBadge('geo', 'err', 'Unsupported'); return; }
+  setBadge('geo', 'warn', 'Requesting');
+  navigator.geolocation.watchPosition(
+    p => { S.geo = p; setBadge('geo', 'ok', 'Live'); },
+    e => setBadge('geo', 'err', e.code === 1 ? 'Permission denied' : e.code === 3 ? 'Timed out' : 'Unavailable'),
+    { enableHighAccuracy: true, maximumAge: 0, timeout: 30000 }
+  );
+}
+
+/* ---------- Motion & orientation ---------- */
+function onMotion(e) { S.motion = e; S.motionN++; }
+function onOrient(e) { S.orient = e; }
+setInterval(() => { if (S.motionN) S.hz = S.motionN; S.motionN = 0; }, 1000);
+
+function attachMotion() {
+  addEventListener('devicemotion', onMotion);
+  addEventListener('deviceorientation', onOrient);
+  setBadge('motion', 'warn', 'Waiting'); setBadge('orient', 'warn', 'Waiting');
+  setTimeout(() => {
+    setBadge('motion', S.motion ? 'ok' : 'err', S.motion ? 'Live' : 'No events');
+    setBadge('orient', S.orient ? 'ok' : 'err', S.orient ? 'Live' : 'No events');
+  }, 2500);
+  $('btnMotion').disabled = true; $('btnMotion').textContent = 'Motion sensors on';
+}
+
+const needsPermission = typeof DeviceMotionEvent !== 'undefined' &&
+                        typeof DeviceMotionEvent.requestPermission === 'function';
+
+$('btnMotion').addEventListener('click', () => {
+  if (!needsPermission) { attachMotion(); return; }
+  // Both requests fire inside the same tap so iPadOS keeps the user gesture.
+  const reqs = [DeviceMotionEvent.requestPermission()];
+  if (typeof DeviceOrientationEvent.requestPermission === 'function') reqs.push(DeviceOrientationEvent.requestPermission());
+  Promise.all(reqs).then(r => {
+    if (r.every(x => x === 'granted')) attachMotion();
+    else { setBadge('motion', 'err', 'Permission denied'); setBadge('orient', 'err', 'Permission denied'); }
+  }).catch(() => { setBadge('motion', 'err', 'Blocked here; open in Safari'); setBadge('orient', 'err', 'Blocked here; open in Safari'); });
+});
+
+/* ---------- Microphone & camera ---------- */
+$('btnAV').addEventListener('click', () => {
+  $('btnAV').disabled = true;
+  const AC = window.AudioContext || window.webkitAudioContext;
+  const ac = AC ? new AC() : null;           // created inside the tap so it can start
+  if (ac) ac.resume();
+
+  if (!navigator.mediaDevices?.getUserMedia) {
+    setBadge('mic', 'err', 'Unsupported'); setBadge('cam', 'err', 'Unsupported'); return;
+  }
+
+  setBadge('mic', 'warn', 'Requesting');
+  navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+    const src = ac.createMediaStreamSource(stream);
+    const an = ac.createAnalyser(); an.fftSize = 2048; src.connect(an);
+    const buf = new Float32Array(an.fftSize);
+    S.mic.sr = ac.sampleRate;
+    (function loop() {
+      an.getFloatTimeDomainData(buf);
+      let sum = 0, pk = 0;
+      for (let i = 0; i < buf.length; i++) { const v = buf[i]; sum += v * v; const a = Math.abs(v); if (a > pk) pk = a; }
+      S.mic.rms = 20 * Math.log10(Math.sqrt(sum / buf.length) || 1e-9);
+      const pdb = 20 * Math.log10(pk || 1e-9);
+      if (pdb > S.mic.peak) S.mic.peak = pdb;
+      requestAnimationFrame(loop);
+    })();
+    setBadge('mic', 'ok', 'Live');
+  }).catch(e => setBadge('mic', 'err', e.name === 'NotAllowedError' ? 'Permission denied' : 'Unavailable'));
+
+  setBadge('cam', 'warn', 'Requesting');
+  navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 320 }, height: { ideal: 240 } } })
+  .then(stream => {
+    const v = $('vid'); v.srcObject = stream; v.style.display = 'block';
+    return v.play().then(() => {
+      const c = document.createElement('canvas'); c.width = 32; c.height = 24;
+      const cx = c.getContext('2d', { willReadFrequently: true });
+      (function loop() {
+        if (v.videoWidth) {
+          cx.drawImage(v, 0, 0, 32, 24);
+          const d = cx.getImageData(0, 0, 32, 24).data;
+          let s = 0;
+          for (let i = 0; i < d.length; i += 4) s += 0.2126 * d[i] + 0.7152 * d[i + 1] + 0.0722 * d[i + 2];
+          S.cam.lum = s / (d.length / 4); S.cam.w = v.videoWidth; S.cam.h = v.videoHeight;
+        }
+        setTimeout(loop, 250);
+      })();
+      setBadge('cam', 'ok', 'Live');
+    });
+  }).catch(e => setBadge('cam', 'err', e.name === 'NotAllowedError' ? 'Permission denied' : 'Unavailable'));
+});
+
+/* ---------- Rendering ---------- */
+function render() {
+  const g = S.geo;
+  if (g) {
+    $('g-lat').textContent = fmt(g.coords.latitude, 6);
+    $('g-lon').textContent = fmt(g.coords.longitude, 6);
+    $('g-acc').textContent = fmt(g.coords.accuracy, 0);
+    $('g-age').textContent = fmt((Date.now() - g.timestamp) / 1000, 0);
+  }
+  const m = S.motion;
+  if (m) {
+    const a = m.acceleration || {}, ag = m.accelerationIncludingGravity || {}, r = m.rotationRate || {};
+    $('a-x').textContent = fmt(a.x); $('a-y').textContent = fmt(a.y); $('a-z').textContent = fmt(a.z);
+    $('ag-x').textContent = fmt(ag.x); $('ag-y').textContent = fmt(ag.y); $('ag-z').textContent = fmt(ag.z);
+    if (ag.x != null) $('ag-m').textContent = fmt(Math.hypot(ag.x, ag.y, ag.z));
+    $('r-a').textContent = fmt(r.alpha, 1); $('r-b').textContent = fmt(r.beta, 1); $('r-g').textContent = fmt(r.gamma, 1);
+    $('m-hz').textContent = S.hz ?? '—';
+  }
+  const o = S.orient;
+  if (o) {
+    $('o-a').textContent = fmt(o.alpha, 1); $('o-b').textContent = fmt(o.beta, 1); $('o-g').textContent = fmt(o.gamma, 1);
+    $('o-abs').textContent = o.absolute ? 'yes' : 'no';
+    $('o-h').textContent = fmt(o.webkitCompassHeading, 1);
+    $('o-hacc').textContent = (o.webkitCompassAccuracy == null || o.webkitCompassAccuracy < 0) ? '—' : fmt(o.webkitCompassAccuracy, 0);
+    const clamp = v => Math.max(-45, Math.min(45, v || 0));
+    const R = 59;                                   // travel radius in px
+    $('bubble').style.transform = `translate(${-clamp(o.gamma) / 45 * R}px, ${-clamp(o.beta) / 45 * R}px)`;
+  }
+  const so = screen.orientation;
+  $('s-type').textContent = so ? so.type : (Math.abs(window.orientation) === 90 ? 'landscape' : 'portrait');
+  $('s-ang').textContent = so ? so.angle : (window.orientation ?? '—');
+  $('s-vp').textContent = innerWidth + '×' + innerHeight;
+  $('s-dpr').textContent = devicePixelRatio;
+
+  if (S.mic.rms != null) {
+    $('mic-rms').textContent = fmt(S.mic.rms, 1);
+    $('mic-pk').textContent = fmt(S.mic.peak, 1);
+    $('mic-sr').textContent = S.mic.sr;
+    $('mic-bar').style.width = Math.max(0, Math.min(100, (S.mic.rms + 90) / 90 * 100)) + '%';
+    S.mic.peak = -Infinity;
+  }
+  if (S.cam.lum != null) {
+    $('cam-l').textContent = fmt(S.cam.lum, 0);
+    $('cam-sz').textContent = S.cam.w + '×' + S.cam.h;
+    $('cam-bar').style.width = (S.cam.lum / 255 * 100) + '%';
+  }
+  $('stamp').textContent = 'Updated ' + new Date().toLocaleTimeString();
+}
+
+let timer = null, live = false;
+function schedule() {
+  clearInterval(timer); live = false;
+  const v = $('rate').value;
+  if (v === 'live') { live = true; (function f() { if (!live) return; render(); requestAnimationFrame(f); })(); }
+  else { render(); timer = setInterval(render, Number(v)); }
+}
+$('rate').addEventListener('change', schedule);
+
+/* ---------- Auto-start whatever needs no tap ---------- */
+startGeo();
+if (!needsPermission && typeof DeviceMotionEvent !== 'undefined') attachMotion();
+schedule();
+</script>
+</body>
+</html>
